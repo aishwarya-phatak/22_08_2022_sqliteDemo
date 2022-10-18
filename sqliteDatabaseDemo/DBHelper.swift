@@ -72,7 +72,7 @@ class DBHelper{
             }
         }
         
-        let queryStringForInsert = "INSERT INTO Person(id,age,name) VALUES (?,?,?);"
+        let queryStringForInsert = "INSERT INTO Person(Id,Age,Name) VALUES (?,?,?);"
         var insertStatement : OpaquePointer? = nil
         if sqlite3_prepare_v2(db,
                               queryStringForInsert,
@@ -102,11 +102,52 @@ class DBHelper{
     //Retrive records from database
     func retriveDataFromDatabase()->[Person]{
         
-        let queryForFetchingrecords = "SELECT * FROM Person;"
+        let queryForFetchingRecords = "SELECT * FROM Person;"
         var retriveStatement : OpaquePointer? = nil
         var persons : [Person] = []
         //var persons = [Person]()
-        
+        if sqlite3_prepare_v2(db,
+                              queryForFetchingRecords,
+                              -1,
+                              &retriveStatement,
+                              nil) == SQLITE_OK{
+            while sqlite3_step(retriveStatement) == SQLITE_ROW{
+                let retrivedId = sqlite3_column_int(retriveStatement, 0)
+                let retrivedAge = sqlite3_column_int(retriveStatement, 1)
+                let retrivedName = String(describing:
+                                            String(
+                                                cString:
+                                                sqlite3_column_text(retriveStatement, 2)))
+                
+                persons.append(Person(id: Int(retrivedId), age: Int(retrivedAge), name: retrivedName))
+                print("Id -- \(retrivedId)  Age -- \(retrivedAge)  Name -- \(retrivedName)")
+            }
+        }else{
+            print("retrive query statement could not be prepared!")
+        }
+        sqlite3_finalize(retriveStatement)
         return persons
+    }
+    
+    func deleteRecordFromDatabase(id : Int){
+        let queryStringForDeletingRecord = "DELETE FROM Person WHERE Id = ?;"
+        var deleteQueryStatement : OpaquePointer? = nil
+        if sqlite3_prepare_v2(db,
+                              queryStringForDeletingRecord,
+                              -1,
+                              &deleteQueryStatement,
+                              nil) == SQLITE_OK{
+            
+            sqlite3_bind_int(deleteQueryStatement, 1, Int32(id))
+           if sqlite3_step(deleteQueryStatement) == SQLITE_DONE{
+                print("Record deleted successfully!")
+            }
+            else {
+                print("Record deletion unsuccessful!")
+            }
+        }else{
+            print("Query for delete not prepared")
+        }
+        sqlite3_finalize(deleteQueryStatement)
     }
 }
